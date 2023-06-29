@@ -1,0 +1,19 @@
+{
+  "name": "telechat",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "node-telegram-bot-api": "^0.61.0",
+    "openai": "^3.3.0",
+    "typescript": "^5.1.6"
+  },
+  "devDependencies": {
+    "@types/node-telegram-bot-api": "^0.61.6",
+    "ts-node": "^10.9.1"
+  }
+}
