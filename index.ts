@@ -18,15 +18,13 @@ async function handleBotMessage(
   }
 
   try {
-    const gptResponse = await sendMessage(text);
+    const generator = sendMessage(text);
 
-    if (!gptResponse || !gptResponse.content) {
+    if (!generator) {
       throw new Error("Failed to send message");
     }
 
-    const { content } = gptResponse;
-
-    botSendMessage(bot, message.chat.id, content);
+    botStreamMessage(bot, message.chat.id, generator);
   } catch (error) {
     console.error(error);
     botSendMessage(
@@ -37,11 +35,54 @@ async function handleBotMessage(
   }
 }
 
-function botSendMessage(bot: TelegramBot, chatId: number, text: string) {
-  bot.sendMessage(chatId, text, { parse_mode: "Markdown" });
+async function botSendMessage(
+  bot: TelegramBot,
+  chatId: number,
+  message: string
+) {
+  bot.sendMessage(chatId, message, {
+    parse_mode: "Markdown",
+  });
 }
 
-function main() {
+async function botStreamMessage(
+  bot: TelegramBot,
+  chatId: number,
+  generator: AsyncGenerator<string, string | undefined, unknown>
+) {
+  let msgId;
+  let lastValue;
+
+  while (true) {
+    const { value, done } = await generator.next();
+
+    if (!value || value === lastValue) {
+      break;
+    }
+
+    lastValue = value;
+
+    if (!msgId) {
+      const msg = await bot.sendMessage(chatId, value, {
+        parse_mode: "Markdown",
+      });
+      msgId = msg.message_id;
+      continue;
+    }
+
+    await bot.editMessageText(value, {
+      chat_id: chatId,
+      message_id: msgId,
+      parse_mode: "Markdown",
+    });
+
+    if (done) {
+      break;
+    }
+  }
+}
+
+async function main() {
   if (!TELEGRAM_TOKEN) {
     console.error("TELEGRAM_TOKEN is not defined");
     process.exit(1);
