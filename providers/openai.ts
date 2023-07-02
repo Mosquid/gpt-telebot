@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { CompletionCreateParams } from "openai/resources/chat";
 
 const API_KEY = process.env.OPENAI_API_KEY;
-const CHUNK_SIZE = 5;
+const CHUNK_SIZE = 20;
 
 const openai = new OpenAI({
   apiKey: API_KEY,
