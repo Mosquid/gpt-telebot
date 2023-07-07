@@ -1,11 +1,5 @@
 import { createPool } from "@vercel/postgres";
-import { Message } from "../types";
-
-export interface ChatMessage {
-  content: string;
-  role: Message["role"];
-  chatId: number;
-}
+import { ChatMessage } from "../types";
 
 if (!process.env.POSTGRES_URL) {
   console.error("Missing POSTGRES_URL");
