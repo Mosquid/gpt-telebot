@@ -13,31 +13,37 @@ require("dotenv").config();
 const telegram_1 = require("./providers/telegram");
 const whitelist_1 = require("./providers/whitelist");
 const openai_1 = require("./providers/openai");
+const postgres_1 = require("./providers/postgres");
 const TELEGRAM_TOKEN = process.env.TELEGRAM_API_KEY;
 function handleBotMessage(bot, message) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { from, text } = message;
+        const { from, text, chat } = message;
         if (!from || !(0, whitelist_1.isWhitelisted)(from.username) || !text) {
             return;
         }
+        let history = yield (0, postgres_1.queryChatMessages)(message.chat.id);
+        history = history || [];
+        console.log({ history });
+        history.push({
+            content: text,
+            role: "user",
+        });
         try {
-            const generator = (0, openai_1.sendMessage)(text);
+            const generator = (0, openai_1.sendMessage)(history);
             if (!generator) {
                 throw new Error("Failed to send message");
             }
             botStreamMessage(bot, message.chat.id, generator);
+            yield (0, postgres_1.addChatMessage)({
+                chatId: chat.id,
+                content: text,
+                role: "user",
+            });
         }
         catch (error) {
             console.error(error);
-            botSendMessage(bot, message.chat.id, "Sorry, I'm having trouble understanding you. Please try again.");
+            (0, telegram_1.botSendMessage)(bot, chat.id, "Sorry, I'm having trouble understanding you. Please try again.");
         }
-    });
-}
-function botSendMessage(bot, chatId, message) {
-    return __awaiter(this, void 0, void 0, function* () {
-        bot.sendMessage(chatId, message, {
-            parse_mode: "Markdown",
-        });
     });
 }
 function botStreamMessage(bot, chatId, generator) {
@@ -57,14 +63,43 @@ function botStreamMessage(bot, chatId, generator) {
                 msgId = msg.message_id;
                 continue;
             }
-            yield bot.editMessageText(value, {
-                chat_id: chatId,
-                message_id: msgId,
-                parse_mode: "Markdown",
-            });
+            yield bot.editMessageText(value, Object.assign({ chat_id: chatId, message_id: msgId, parse_mode: "Markdown" }, (done && {
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: "New Chat",
+                                callback_data: "NEW",
+                            },
+                        ],
+                    ],
+                },
+            })));
             if (done) {
+                yield (0, postgres_1.addChatMessage)({
+                    chatId,
+                    content: value,
+                    role: "assistant",
+                });
                 break;
             }
+        }
+    });
+}
+function handleBotCallbackQuery(bot, query) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { data, message } = query;
+        if (!data || !message) {
+            return;
+        }
+        try {
+            if (data === "NEW") {
+                yield (0, postgres_1.deleteChatMessages)(message.chat.id);
+                (0, telegram_1.botSendMessage)(bot, message.chat.id, "How can I help?");
+            }
+        }
+        catch (error) {
+            (0, telegram_1.botSendMessage)(bot, query.message.chat.id, "Failed to start a new chat. Please try again.");
         }
     });
 }
@@ -76,6 +111,7 @@ function main() {
         }
         const bot = (0, telegram_1.createBot)(TELEGRAM_TOKEN);
         bot.on("message", (message) => handleBotMessage(bot, message));
+        bot.on("callback_query", (data) => handleBotCallbackQuery(bot, data));
     });
 }
 main();

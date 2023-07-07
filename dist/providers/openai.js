@@ -29,21 +29,19 @@ const CHUNK_SIZE = 20;
 const openai = new openai_1.default({
     apiKey: API_KEY,
 });
-const messages = [
-    {
-        role: "system",
-        content: `Strictly avoid phrases that start with "As and AI model". If you can't tell, say that you can't. If you don't know say you don't know. If you don't understand, say you don't understand.`,
-    },
-];
-function sendMessage(content) {
+function sendMessage(history) {
     return __asyncGenerator(this, arguments, function* sendMessage_1() {
         var _a, e_1, _b, _c;
-        messages.push({
-            role: "user",
-            content,
-        });
+        const messages = [
+            {
+                role: "system",
+                content: `Strictly avoid phrases that start with "As and AI model". If you can't tell, say that you can't. If you don't know say you don't know. If you don't understand, say you don't understand.`,
+            },
+            ...history,
+        ];
         const message = [];
         let yieldedTimes = 0;
+        console.log(messages);
         try {
             const response = yield __await(openai.chat.completions.create({
                 model: "gpt-3.5-turbo",
