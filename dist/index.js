@@ -21,14 +21,13 @@ function handleBotMessage(bot, message) {
         if (!from || !(0, whitelist_1.isWhitelisted)(from.username) || !text) {
             return;
         }
-        let history = yield (0, postgres_1.queryChatMessages)(message.chat.id);
-        history = history || [];
-        console.log({ history });
-        history.push({
-            content: text,
-            role: "user",
-        });
         try {
+            let history = yield (0, postgres_1.queryChatMessages)(message.chat.id);
+            history = history || [];
+            history.push({
+                content: text,
+                role: "user",
+            });
             const generator = (0, openai_1.sendMessage)(history);
             if (!generator) {
                 throw new Error("Failed to send message");
@@ -89,17 +88,15 @@ function botStreamMessage(bot, chatId, generator) {
 function handleBotCallbackQuery(bot, query) {
     return __awaiter(this, void 0, void 0, function* () {
         const { data, message } = query;
-        if (!data || !message) {
+        if (!data || !message || data !== "NEW") {
             return;
         }
         try {
-            if (data === "NEW") {
-                yield (0, postgres_1.deleteChatMessages)(message.chat.id);
-                (0, telegram_1.botSendMessage)(bot, message.chat.id, "How can I help?");
-            }
+            yield (0, postgres_1.deleteChatMessages)(message.chat.id);
+            (0, telegram_1.botSendMessage)(bot, message.chat.id, "How can I help?");
         }
         catch (error) {
-            (0, telegram_1.botSendMessage)(bot, query.message.chat.id, "Failed to start a new chat. Please try again.");
+            (0, telegram_1.botSendMessage)(bot, message.chat.id, "Failed to start a new chat. Please try again.");
         }
     });
 }

@@ -23,15 +23,14 @@ async function handleBotMessage(
     return;
   }
 
-  let history = await queryChatMessages(message.chat.id);
-  history = history || [];
-  console.log({ history });
-  history.push({
-    content: text,
-    role: "user",
-  });
-
   try {
+    let history = await queryChatMessages(message.chat.id);
+    history = history || [];
+
+    history.push({
+      content: text,
+      role: "user",
+    });
     const generator = sendMessage(history as Array<Message>);
 
     if (!generator) {
@@ -111,18 +110,16 @@ async function botStreamMessage(
 async function handleBotCallbackQuery(bot: TelegramBot, query: CallbackQuery) {
   const { data, message } = query;
 
-  if (!data || !message) {
+  if (!data || !message || data !== "NEW") {
     return;
   }
   try {
-    if (data === "NEW") {
-      await deleteChatMessages(message.chat.id);
-      botSendMessage(bot, message.chat.id, "How can I help?");
-    }
+    await deleteChatMessages(message.chat.id);
+    botSendMessage(bot, message.chat.id, "How can I help?");
   } catch (error) {
     botSendMessage(
       bot,
-      query.message!.chat.id,
+      message.chat.id,
       "Failed to start a new chat. Please try again."
     );
   }

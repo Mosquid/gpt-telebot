@@ -19,7 +19,7 @@ export async function* sendMessage(history: Array<Message>) {
 
   const message = [];
   let yieldedTimes = 0;
-  console.log(messages);
+
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",

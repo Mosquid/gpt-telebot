@@ -41,7 +41,6 @@ function sendMessage(history) {
         ];
         const message = [];
         let yieldedTimes = 0;
-        console.log(messages);
         try {
             const response = yield __await(openai.chat.completions.create({
                 model: "gpt-3.5-turbo",
