@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { Message } from "../types";
+import callFunctionByName from "./functions";
 
 const API_KEY = process.env.OPENAI_API_KEY;
 const CHUNK_SIZE = 20;
@@ -25,11 +26,70 @@ export async function* sendMessage(history: Array<Message>) {
       model: "gpt-3.5-turbo",
       messages,
       stream: true,
+      functions: [
+        {
+          name: "turn_on_blue_light",
+          parameters: {
+            type: "object",
+            properties: {
+              time: {
+                type: "string",
+                description: "Get the current time.",
+              },
+            },
+            required: [],
+          },
+        },
+        {
+          name: "turn_off_blue_light",
+          parameters: {
+            type: "object",
+            properties: {
+              time: {
+                type: "string",
+                description: "Get the current time.",
+              },
+            },
+            required: [],
+          },
+        },
+        {
+          name: "turn_off_green_light",
+          parameters: {
+            type: "object",
+            properties: {
+              time: {
+                type: "string",
+                description: "Get the current time.",
+              },
+            },
+            required: [],
+          },
+        },
+        {
+          name: "turn_on_green_light",
+          parameters: {
+            type: "object",
+            properties: {
+              time: {
+                type: "string",
+                description: "Get the current time.",
+              },
+            },
+            required: [],
+          },
+        },
+      ],
     });
 
     for await (const part of response) {
       const [chioce] = part.choices;
-      const { content } = chioce.delta || {};
+      const { content, function_call } = chioce.delta || {};
+
+      if (function_call) {
+        callFunctionByName(function_call);
+        return "Sure! My pleasure.";
+      }
 
       message.push(content);
       const yieldableChunks = Math.ceil(message.length / CHUNK_SIZE);
