@@ -10,6 +10,7 @@ import {
   queryChatMessages,
 } from "./providers/postgres";
 import { Message } from "./types";
+import { transcribeUrl } from "./providers/deepgram";
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_API_KEY;
 
@@ -17,8 +18,19 @@ async function handleBotMessage(
   bot: TelegramBot,
   message: TelegramBot.Message
 ) {
-  const { from, text, chat } = message;
+  const { from, text, chat, voice } = message;
 
+  if (voice) {
+    const file = await bot.getFile(voice?.file_id);
+    const url = `https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${file.file_path}`;
+    const { results } = await transcribeUrl(url);
+    const { channels } = results;
+    const [channel] = channels;
+    const { alternatives } = channel;
+    const [alternative] = alternatives;
+    const { transcript } = alternative;
+    botSendMessage(bot, chat.id, transcript);
+  }
   if (!from || !isWhitelisted(from.username) || !text) {
     return;
   }
