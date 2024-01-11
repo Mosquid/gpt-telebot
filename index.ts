@@ -3,7 +3,7 @@ require("dotenv").config();
 import TelegramBot, { CallbackQuery } from "node-telegram-bot-api";
 import { createBot, botSendMessage } from "./providers/telegram";
 import { isWhitelisted } from "./providers/whitelist";
-import { sendMessage } from "./providers/openai";
+import { askAgent, sendMessage } from "./providers/openai";
 import {
   addChatMessage,
   deleteChatMessages,
@@ -11,50 +11,53 @@ import {
 } from "./providers/postgres";
 import { Message } from "./types";
 import { transcribeUrl } from "./providers/deepgram";
+import { notionCreatePage } from "./providers/notion";
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_API_KEY;
+
+async function handleVoiceMessage(
+  bot: TelegramBot,
+  message: TelegramBot.Message
+) {
+  const { voice } = message;
+  const file = await bot.getFile(voice!.file_id);
+  const url = `https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${file.file_path}`;
+  const { results } = await transcribeUrl(url);
+  const { channels } = results;
+  const [channel] = channels;
+  const { alternatives } = channel;
+  const [alternative] = alternatives;
+  const { transcript } = alternative;
+
+  return transcript;
+}
 
 async function handleBotMessage(
   bot: TelegramBot,
   message: TelegramBot.Message
 ) {
-  const { from, text, chat, voice } = message;
+  let { text } = message;
+  const { from, chat } = message;
 
-  if (voice) {
-    const file = await bot.getFile(voice?.file_id);
-    const url = `https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${file.file_path}`;
-    const { results } = await transcribeUrl(url);
-    const { channels } = results;
-    const [channel] = channels;
-    const { alternatives } = channel;
-    const [alternative] = alternatives;
-    const { transcript } = alternative;
-    botSendMessage(bot, chat.id, transcript);
-  }
-  if (!from || !isWhitelisted(from.username) || !text) {
+  if (!from || !isWhitelisted(from.username) || !(text || message.voice)) {
     return;
   }
 
+  if (message.voice) {
+    text = await handleVoiceMessage(bot, message);
+  }
+
   try {
-    let history = await queryChatMessages(message.chat.id);
-    history = history || [];
+    if (!text) return;
 
-    history.push({
-      content: text,
-      role: "user",
-    });
-    const generator = sendMessage(history as Array<Message>);
+    const fnArgs = await askAgent(text);
 
-    if (!generator) {
-      throw new Error("Failed to send message");
+    if (fnArgs) {
+      await notionCreatePage(fnArgs);
+      botSendMessage(bot, chat.id, fnArgs.summary);
+    } else {
+      botSendMessage(bot, chat.id, "Sorry, I did not understand that.");
     }
-
-    botStreamMessage(bot, message.chat.id, generator);
-    await addChatMessage({
-      chatId: chat.id,
-      content: text,
-      role: "user",
-    });
   } catch (error) {
     console.error(error);
     botSendMessage(
@@ -142,6 +145,8 @@ async function main() {
     console.error("TELEGRAM_TOKEN is not defined");
     process.exit(1);
   }
+
+  await askAgent("test my telegram bot");
 
   const bot = createBot(TELEGRAM_TOKEN);
 

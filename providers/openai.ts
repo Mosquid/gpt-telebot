@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { Message } from "../types";
 import callFunctionByName from "./functions";
+import { NotionPagePayload } from "./notion";
 
 const API_KEY = process.env.OPENAI_API_KEY;
 const CHUNK_SIZE = 20;
@@ -108,5 +109,50 @@ export async function* sendMessage(history: Array<Message>) {
   } catch (error) {
     console.error(error);
     throw new Error("Failed to send message");
+  }
+}
+
+async function isRunCompleted(threadId: string, runId: string) {
+  try {
+    const run = await openai.beta.threads.runs.retrieve(threadId, runId);
+    const endStatuses = ["completed", "failed", "stopped", "requires_action"];
+
+    if (endStatuses.includes(run.status)) {
+      return run.required_action;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    return isRunCompleted(threadId, runId);
+  } catch (error) {
+    console.error(error, "Failed to check thread status");
+  }
+}
+
+export async function askAgent(
+  content: string
+): Promise<NotionPagePayload | undefined> {
+  try {
+    const thread = await openai.beta.threads.create({
+      messages: [
+        {
+          role: "user",
+          content,
+        },
+      ],
+    });
+
+    const run = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: process.env.OPENAI_ASSISTANT_ID || "",
+      model: "gpt-4-1106-preview",
+    });
+
+    const action = await isRunCompleted(thread.id, run.id);
+    const [fnCall] = action?.submit_tool_outputs.tool_calls || [];
+    const callAtgs = fnCall?.function.arguments;
+
+    return JSON.parse(callAtgs);
+  } catch (error) {
+    console.error(error, "Failed to ask agent");
   }
 }
