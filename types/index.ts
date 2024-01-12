@@ -1,7 +1,6 @@
-import { CompletionCreateParams } from "openai/resources/chat";
+import { ChatCompletionMessage } from "openai/resources/chat";
 
-export type Message =
-  CompletionCreateParams.CreateChatCompletionRequestNonStreaming.Message;
+export type Message = ChatCompletionMessage;
 
 export interface ChatMessage {
   content: string;

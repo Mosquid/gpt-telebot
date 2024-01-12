@@ -14,30 +14,44 @@ const telegram_1 = require("./providers/telegram");
 const whitelist_1 = require("./providers/whitelist");
 const openai_1 = require("./providers/openai");
 const postgres_1 = require("./providers/postgres");
+const deepgram_1 = require("./providers/deepgram");
+const notion_1 = require("./providers/notion");
 const TELEGRAM_TOKEN = process.env.TELEGRAM_API_KEY;
+function handleVoiceMessage(bot, message) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { voice } = message;
+        const file = yield bot.getFile(voice.file_id);
+        const url = `https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${file.file_path}`;
+        const { results } = yield (0, deepgram_1.transcribeUrl)(url);
+        const { channels } = results;
+        const [channel] = channels;
+        const { alternatives } = channel;
+        const [alternative] = alternatives;
+        const { transcript } = alternative;
+        return transcript;
+    });
+}
 function handleBotMessage(bot, message) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { from, text, chat } = message;
-        if (!from || !(0, whitelist_1.isWhitelisted)(from.username) || !text) {
+        let { text } = message;
+        const { from, chat } = message;
+        if (!from || !(0, whitelist_1.isWhitelisted)(from.username) || !(text || message.voice)) {
             return;
         }
+        if (message.voice) {
+            text = yield handleVoiceMessage(bot, message);
+        }
         try {
-            let history = yield (0, postgres_1.queryChatMessages)(message.chat.id);
-            history = history || [];
-            history.push({
-                content: text,
-                role: "user",
-            });
-            const generator = (0, openai_1.sendMessage)(history);
-            if (!generator) {
-                throw new Error("Failed to send message");
+            if (!text)
+                return;
+            const fnArgs = yield (0, openai_1.askAgent)(text);
+            if (fnArgs) {
+                yield (0, notion_1.notionCreatePage)(fnArgs);
+                (0, telegram_1.botSendMessage)(bot, chat.id, fnArgs.summary);
             }
-            botStreamMessage(bot, message.chat.id, generator);
-            yield (0, postgres_1.addChatMessage)({
-                chatId: chat.id,
-                content: text,
-                role: "user",
-            });
+            else {
+                (0, telegram_1.botSendMessage)(bot, chat.id, "Sorry, I did not understand that.");
+            }
         }
         catch (error) {
             console.error(error);
@@ -106,6 +120,7 @@ function main() {
             console.error("TELEGRAM_TOKEN is not defined");
             process.exit(1);
         }
+        yield (0, openai_1.askAgent)("test my telegram bot");
         const bot = (0, telegram_1.createBot)(TELEGRAM_TOKEN);
         bot.on("message", (message) => handleBotMessage(bot, message));
         bot.on("callback_query", (data) => handleBotCallbackQuery(bot, data));
