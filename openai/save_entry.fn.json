@@ -1,0 +1,29 @@
+{
+  "name": "save_entry",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "summary": {
+        "type": "string",
+        "description": "A short summary of the entry. Max 140 characters"
+      },
+      "category": {
+        "type": "string",
+        "description": "Relevant entry category"
+      },
+      "tags": {
+        "type": "array",
+        "description": "Relevant entry tags",
+        "items": {
+          "type": "string"
+        }
+      },
+      "content": {
+        "type": "string",
+        "description": "Raw user input"
+      }
+    },
+    "required": ["summary", "category", "tags"]
+  },
+  "description": "Receives and saves item in the db"
+}

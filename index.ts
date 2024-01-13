@@ -3,13 +3,8 @@ require("dotenv").config();
 import TelegramBot, { CallbackQuery } from "node-telegram-bot-api";
 import { createBot, botSendMessage } from "./providers/telegram";
 import { isWhitelisted } from "./providers/whitelist";
-import { askAgent, sendMessage } from "./providers/openai";
-import {
-  addChatMessage,
-  deleteChatMessages,
-  queryChatMessages,
-} from "./providers/postgres";
-import { Message } from "./types";
+import { askAgent } from "./providers/openai";
+import { addChatMessage, deleteChatMessages } from "./providers/postgres";
 import { transcribeUrl } from "./providers/deepgram";
 import { notionCreatePage } from "./providers/notion";
 
