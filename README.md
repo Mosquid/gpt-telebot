@@ -37,6 +37,7 @@ Telegram-integrated AI tool that leverages OpenAI's Assistant API for efficient 
 2. Click on the 3-dot menu in the header section of your database view and select `Copy link to view`.
 3. The link you'll get will look like this: `https://www.notion.so/[YOUR_DATABASE_ID]?v[VIEW_ID]&pvs=[INT]`.
 4. Copy your database ID from the url and add it your .env file (`NOTION_DATABASE_ID=`).
+5. Click on the 3-dot menu in the top right corner of your page and click on `+ add connection`. Select the integration you created. If you haven't yet, please follow [this guide](https://www.google.com/search?q=notion+get+api+key&oq=notion+get+api+key&gs_lcrp=EgZjaHJvbWUqBggAEEUYOzIGCAAQRRg7MgwIARAjGCcYgAQYigUyDAgCECMYJxiABBiKBTIMCAMQABhDGIAEGIoFMgwIBBAAGEMYgAQYigUyDAgFEAAYQxiABBiKBTIMCAYQABhDGIAEGIoFMgwIBxAAGEMYgAQYigUyBwgIEAAYgAQyBwgJEAAYgATSAQgyOTIyajBqN6gCALACAA&sourceid=chrome&ie=UTF-8).
 
 ### Restricting access to your Telegram bot
 
