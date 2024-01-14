@@ -16,18 +16,28 @@ const { createClient } = require("@deepgram/sdk");
 const deepgramApiKey = process.env.DEEPGRAM_API_KEY || "";
 // Transcribe an audio file from a URL:
 const transcribeUrl = (url) => __awaiter(void 0, void 0, void 0, function* () {
-    const deepgram = createClient(deepgramApiKey);
-    const { result, error } = yield deepgram.listen.prerecorded.transcribeUrl({
-        url,
-    }, {
-        smart_format: true,
-        model: "nova-2",
-    });
-    if (error)
-        throw error;
-    if (!error)
-        console.dir(result, { depth: null });
-    return result;
+    try {
+        const deepgram = createClient(deepgramApiKey);
+        const { result, error } = yield deepgram.listen.prerecorded.transcribeUrl({
+            url,
+        }, {
+            smart_format: true,
+            model: "nova-2",
+        });
+        if (error)
+            throw error;
+        const { results } = result;
+        const { channels } = results;
+        const [channel] = channels;
+        const { alternatives } = channel;
+        const [alternative] = alternatives;
+        const { transcript } = alternative;
+        return transcript;
+    }
+    catch (error) {
+        console.error(error, `Failed to transcribe audio file from URL: ${url}`);
+        return "";
+    }
 });
 exports.transcribeUrl = transcribeUrl;
 // Transcribe an audio file from a local file:

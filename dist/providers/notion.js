@@ -17,7 +17,7 @@ const notion = new client_1.Client({
 });
 function notionCreatePage(payload) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { summary, category, tags } = payload;
+        const { summary, category, tags, content } = payload;
         const myPage = yield notion.pages.create({
             parent: {
                 database_id: process.env.NOTION_DATABASE_ID || "",
@@ -51,6 +51,22 @@ function notionCreatePage(payload) {
                         : [],
                 },
             },
+            children: [
+                {
+                    object: "block",
+                    type: "paragraph",
+                    paragraph: {
+                        rich_text: [
+                            {
+                                type: "text",
+                                text: {
+                                    content: content || "",
+                                },
+                            },
+                        ],
+                    },
+                },
+            ],
         });
         return myPage;
     });

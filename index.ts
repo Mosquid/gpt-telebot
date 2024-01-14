@@ -4,7 +4,7 @@ import TelegramBot, { CallbackQuery } from "node-telegram-bot-api";
 import { createBot, botSendMessage } from "./providers/telegram";
 import { isWhitelisted } from "./providers/whitelist";
 import { askAgent } from "./providers/openai";
-import { addChatMessage, deleteChatMessages } from "./providers/postgres";
+import { deleteChatMessages } from "./providers/postgres";
 import { transcribeUrl } from "./providers/deepgram";
 import { notionCreatePage } from "./providers/notion";
 
@@ -17,12 +17,7 @@ async function handleVoiceMessage(
   const { voice } = message;
   const file = await bot.getFile(voice!.file_id);
   const url = `https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${file.file_path}`;
-  const { results } = await transcribeUrl(url);
-  const { channels } = results;
-  const [channel] = channels;
-  const { alternatives } = channel;
-  const [alternative] = alternatives;
-  const { transcript } = alternative;
+  const transcript = await transcribeUrl(url);
 
   return transcript;
 }
@@ -63,60 +58,6 @@ async function handleBotMessage(
   }
 }
 
-async function botStreamMessage(
-  bot: TelegramBot,
-  chatId: number,
-  generator: AsyncGenerator<string, string | undefined, unknown>
-) {
-  let msgId;
-  let lastValue;
-
-  while (true) {
-    const { value, done } = await generator.next();
-
-    if (!value || value === lastValue) {
-      break;
-    }
-
-    lastValue = value;
-
-    if (!msgId) {
-      const msg = await bot.sendMessage(chatId, value, {
-        parse_mode: "Markdown",
-      });
-      msgId = msg.message_id;
-      continue;
-    }
-
-    await bot.editMessageText(value, {
-      chat_id: chatId,
-      message_id: msgId,
-      parse_mode: "Markdown",
-      ...(done && {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: "New Chat",
-                callback_data: "NEW",
-              },
-            ],
-          ],
-        },
-      }),
-    });
-
-    if (done) {
-      await addChatMessage({
-        chatId,
-        content: value,
-        role: "assistant",
-      });
-      break;
-    }
-  }
-}
-
 async function handleBotCallbackQuery(bot: TelegramBot, query: CallbackQuery) {
   const { data, message } = query;
 
@@ -140,8 +81,6 @@ async function main() {
     console.error("TELEGRAM_TOKEN is not defined");
     process.exit(1);
   }
-
-  await askAgent("test my telegram bot");
 
   const bot = createBot(TELEGRAM_TOKEN);
 

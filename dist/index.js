@@ -22,12 +22,7 @@ function handleVoiceMessage(bot, message) {
         const { voice } = message;
         const file = yield bot.getFile(voice.file_id);
         const url = `https://api.telegram.org/file/bot${TELEGRAM_TOKEN}/${file.file_path}`;
-        const { results } = yield (0, deepgram_1.transcribeUrl)(url);
-        const { channels } = results;
-        const [channel] = channels;
-        const { alternatives } = channel;
-        const [alternative] = alternatives;
-        const { transcript } = alternative;
+        const transcript = yield (0, deepgram_1.transcribeUrl)(url);
         return transcript;
     });
 }
@@ -59,46 +54,6 @@ function handleBotMessage(bot, message) {
         }
     });
 }
-function botStreamMessage(bot, chatId, generator) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let msgId;
-        let lastValue;
-        while (true) {
-            const { value, done } = yield generator.next();
-            if (!value || value === lastValue) {
-                break;
-            }
-            lastValue = value;
-            if (!msgId) {
-                const msg = yield bot.sendMessage(chatId, value, {
-                    parse_mode: "Markdown",
-                });
-                msgId = msg.message_id;
-                continue;
-            }
-            yield bot.editMessageText(value, Object.assign({ chat_id: chatId, message_id: msgId, parse_mode: "Markdown" }, (done && {
-                reply_markup: {
-                    inline_keyboard: [
-                        [
-                            {
-                                text: "New Chat",
-                                callback_data: "NEW",
-                            },
-                        ],
-                    ],
-                },
-            })));
-            if (done) {
-                yield (0, postgres_1.addChatMessage)({
-                    chatId,
-                    content: value,
-                    role: "assistant",
-                });
-                break;
-            }
-        }
-    });
-}
 function handleBotCallbackQuery(bot, query) {
     return __awaiter(this, void 0, void 0, function* () {
         const { data, message } = query;
@@ -120,7 +75,6 @@ function main() {
             console.error("TELEGRAM_TOKEN is not defined");
             process.exit(1);
         }
-        yield (0, openai_1.askAgent)("test my telegram bot");
         const bot = (0, telegram_1.createBot)(TELEGRAM_TOKEN);
         bot.on("message", (message) => handleBotMessage(bot, message));
         bot.on("callback_query", (data) => handleBotCallbackQuery(bot, data));
