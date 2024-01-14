@@ -4,10 +4,10 @@ Telegram-integrated AI tool that leverages OpenAI's Assistant API for efficient 
 
 ## Installation Resources
 
-1. Dedicated compute instance for hosting the telegram bot.
+1. Dedicated compute instance to host the Telegram bot.
 2. OpenAI plus subscription plan.
-3. Telegram account
-4. Deepgram account (optional)
+3. Telegram account.
+4. Deepgram account (optional).
 
 ## Deployment and configuration
 
