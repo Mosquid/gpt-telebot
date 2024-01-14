@@ -34,13 +34,13 @@ Telegram-integrated AI tool that leverages OpenAI's Assistant API for efficient 
 ### Setting up Notion
 
 1. Create a new page and insert a database ([guide](https://www.notion.so/help/intro-to-databases)).
-2. Click on 3-dot-menu in the header section of your database view and select `Copy link to view`.
+2. Click on the 3-dot menu in the header section of your database view and select `Copy link to view`.
 3. The link you'll get will look like this: `https://www.notion.so/[YOUR_DATABASE_ID]?v[VIEW_ID]&pvs=[INT]`.
 4. Copy your database ID from the url and add it your .env file (`NOTION_DATABASE_ID=`).
 
 ### Restricting access to your Telegram bot
 
-Add `WHITELIST` property to your `.env`, which contains your Telegram username. This way only you can interract with your bot even if other people will discover it.
+Add the `WHITELIST` property to your `.env`, which should contain your Telegram username. This way only you can interact with your bot even if other people will discover it.
 
 ### Environment variables
 
@@ -53,6 +53,7 @@ TELEGRAM_API_KEY=
 DEEPGRAM_API_KEY=
 NOTION_API_KEY=
 NOTION_DATABASE_ID=
+WHITELIST=
 ```
 
 ## Deployment
