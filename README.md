@@ -28,8 +28,8 @@ Telegram-integrated AI tool that leverages OpenAI's Assistant API for efficient 
 2. Create a new assistant
 3. The instructions could be [found here](https://github.com/Mosquid/gpt-telebot/blob/main/openai/prompt.txt).
 4. Add `save_entry` function. The function's JSON can be [found here](https://github.com/Mosquid/gpt-telebot/blob/main/openai/save_entry.fn.json).
-5. gpt-4 model
-6. Once your assistant is ready, copy its ID (can be found either in URL or under assistant's name). It's a string that starts with `asst_`. Paste it in your `.env` (`OPENAI_ASSISTANT_ID=`)
+5. Select gpt-4 model.
+6. Once your assistant is ready, copy its ID (can be found either in URL or under assistant's name). It's a string that starts with `asst_`. Paste it in your `.env` (`OPENAI_ASSISTANT_ID=`).
 
 ### Setting up Notion
 
