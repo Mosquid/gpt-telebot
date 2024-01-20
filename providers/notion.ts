@@ -5,7 +5,8 @@ export type NotionPagePayload = {
   summary: string;
   category: string;
   tags: string[];
-  content: string;
+  raw_input: string;
+  ai_insights: string;
 };
 
 const notion = new Client({
@@ -13,7 +14,7 @@ const notion = new Client({
 });
 
 export async function notionCreatePage(payload: NotionPagePayload) {
-  const { summary, category, tags, content } = payload;
+  const { summary, category, tags, raw_input, ai_insights } = payload;
   const myPage = await notion.pages.create({
     parent: {
       database_id: process.env.NOTION_DATABASE_ID || "",
@@ -56,7 +57,21 @@ export async function notionCreatePage(payload: NotionPagePayload) {
             {
               type: "text",
               text: {
-                content: content || "",
+                content: raw_input || "",
+              },
+            },
+          ],
+        },
+      },
+      {
+        object: "block",
+        type: "paragraph",
+        paragraph: {
+          rich_text: [
+            {
+              type: "text",
+              text: {
+                content: ai_insights || "",
               },
             },
           ],

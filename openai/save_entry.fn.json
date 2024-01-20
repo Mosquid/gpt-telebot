@@ -18,9 +18,13 @@
           "type": "string"
         }
       },
-      "content": {
+      "raw_input": {
         "type": "string",
-        "description": "Raw user input"
+        "description": "Provide raw chat message as is"
+      },
+      "ai_insights": {
+        "type": "string",
+        "description": "Automatically populated by AI assistant with insights, assessments, and critical analysis based on the content of the user message"
       }
     },
     "required": ["summary", "category", "tags"]
