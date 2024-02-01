@@ -7,12 +7,12 @@
         "type": "string",
         "description": "A text of the reminder (what to remind about)"
       },
-      "datetime": {
+      "diff_in_minutes": {
         "type": "string",
-        "description": "A date and time when to remind (ISO 8601 format)"
+        "description": "A number of minutes to add to the current time"
       }
     },
-    "required": ["text", "datetime"]
+    "required": ["text", "diff_in_minutes"]
   },
   "description": "Schedules a reminder for a given date and time"
 }

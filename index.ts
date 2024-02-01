@@ -1,12 +1,10 @@
 require("dotenv").config();
 
 import TelegramBot, { CallbackQuery } from "node-telegram-bot-api";
-import { createBot, botSendMessage } from "./providers/telegram";
+import { botSendMessage, bot, TELEGRAM_TOKEN } from "./providers/telegram";
 import { isWhitelisted } from "./providers/whitelist";
 import { askAgent } from "./providers/openai";
 import { transcribeUrl } from "./providers/deepgram";
-
-const TELEGRAM_TOKEN = process.env.TELEGRAM_API_KEY;
 
 async function handleVoiceMessage(
   bot: TelegramBot,
@@ -24,6 +22,7 @@ async function handleBotMessage(
   bot: TelegramBot,
   message: TelegramBot.Message
 ) {
+  console.log("[ooo[");
   let { text } = message;
   const { from, chat } = message;
 
@@ -38,7 +37,7 @@ async function handleBotMessage(
   try {
     if (!text) return;
 
-    const reply = await askAgent(text);
+    const reply = await askAgent(text, chat);
 
     if (reply) {
       botSendMessage(bot, chat.id, reply);
@@ -73,13 +72,6 @@ async function handleBotCallbackQuery(bot: TelegramBot, query: CallbackQuery) {
 }
 
 async function main() {
-  if (!TELEGRAM_TOKEN) {
-    console.error("TELEGRAM_TOKEN is not defined");
-    process.exit(1);
-  }
-
-  const bot = createBot(TELEGRAM_TOKEN);
-
   bot.on("message", (message) => handleBotMessage(bot, message));
   bot.on("callback_query", (data) => handleBotCallbackQuery(bot, data));
 }

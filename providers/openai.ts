@@ -2,6 +2,8 @@ import OpenAI from "openai";
 import { Message } from "../types";
 import callFunctionByName from "./functions";
 import { notionCreatePage } from "./notion";
+import TelegramBot from "node-telegram-bot-api";
+import { scheduleReminder } from "./scheduler";
 
 const API_KEY = process.env.OPENAI_API_KEY;
 const CHUNK_SIZE = 20;
@@ -141,15 +143,20 @@ async function save_entry(entry: string) {
   }
 }
 
-function schedule_reminder(paramString: string) {
+function schedule_reminder(paramString: string, chat: TelegramBot.Chat) {
   try {
     const params = JSON.parse(paramString) as {
-      datetime: string;
+      diff_in_minutes: string;
       text: string;
     };
 
-    const { datetime, text } = params;
-    return `Reminder scheduled for ${datetime} with the text: ${text}`;
+    const { diff_in_minutes, text } = params;
+    const hoursDiff = Number(diff_in_minutes) / 60;
+    const diffStr =
+      hoursDiff > 1 ? `${hoursDiff} hours` : `${diff_in_minutes} minutes`;
+    scheduleReminder(params, chat);
+
+    return `Reminder scheduled in ${diffStr} with the text: ${text}`;
   } catch (error) {
     console.error("Failed to schedule reminder", error);
     return "Failed to schedule reminder";
@@ -161,13 +168,13 @@ const functions = {
   schedule_reminder,
 };
 
-export async function askAgent(content: string) {
+export async function askAgent(content: string, chat: TelegramBot.Chat) {
   try {
     const thread = await openai.beta.threads.create({
       messages: [
         {
           role: "user",
-          content,
+          content: `${content}; \r current_time: {$(new Date().toISOString())}`,
         },
       ],
     });
@@ -185,7 +192,7 @@ export async function askAgent(content: string) {
     if (fnName in functions) {
       const fn = functions[fnName as keyof typeof functions];
       if (typeof fn === "function") {
-        return fn(callAtgs);
+        return fn(callAtgs, chat);
       }
     }
     return "Sorry, I did not understand that.";
