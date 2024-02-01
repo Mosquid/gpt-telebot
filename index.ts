@@ -4,9 +4,7 @@ import TelegramBot, { CallbackQuery } from "node-telegram-bot-api";
 import { createBot, botSendMessage } from "./providers/telegram";
 import { isWhitelisted } from "./providers/whitelist";
 import { askAgent } from "./providers/openai";
-import { deleteChatMessages } from "./providers/postgres";
 import { transcribeUrl } from "./providers/deepgram";
-import { notionCreatePage } from "./providers/notion";
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_API_KEY;
 
@@ -40,11 +38,10 @@ async function handleBotMessage(
   try {
     if (!text) return;
 
-    const fnArgs = await askAgent(text);
+    const reply = await askAgent(text);
 
-    if (fnArgs) {
-      await notionCreatePage(fnArgs);
-      botSendMessage(bot, chat.id, fnArgs.summary);
+    if (reply) {
+      botSendMessage(bot, chat.id, reply);
     } else {
       botSendMessage(bot, chat.id, "Sorry, I did not understand that.");
     }
@@ -65,7 +62,6 @@ async function handleBotCallbackQuery(bot: TelegramBot, query: CallbackQuery) {
     return;
   }
   try {
-    await deleteChatMessages(message.chat.id);
     botSendMessage(bot, message.chat.id, "How can I help?");
   } catch (error) {
     botSendMessage(

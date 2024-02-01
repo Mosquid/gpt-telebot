@@ -1,8 +1,7 @@
 import OpenAI from "openai";
 import { Message } from "../types";
 import callFunctionByName from "./functions";
-import { NotionPagePayload } from "./notion";
-import { MessageCreateParams } from "openai/resources/beta/threads/messages/messages";
+import { notionCreatePage } from "./notion";
 
 const API_KEY = process.env.OPENAI_API_KEY;
 const CHUNK_SIZE = 20;
@@ -130,9 +129,39 @@ async function isRunCompleted(threadId: string, runId: string) {
   }
 }
 
-export async function askAgent(
-  content: string
-): Promise<NotionPagePayload | undefined> {
+async function save_entry(entry: string) {
+  try {
+    const data = JSON.parse(entry);
+    await notionCreatePage(data);
+
+    return data.summary;
+  } catch (error) {
+    console.error("Failed to save entry", error);
+    return entry;
+  }
+}
+
+function schedule_reminder(paramString: string) {
+  try {
+    const params = JSON.parse(paramString) as {
+      datetime: string;
+      text: string;
+    };
+
+    const { datetime, text } = params;
+    return `Reminder scheduled for ${datetime} with the text: ${text}`;
+  } catch (error) {
+    console.error("Failed to schedule reminder", error);
+    return "Failed to schedule reminder";
+  }
+}
+
+const functions = {
+  save_entry,
+  schedule_reminder,
+};
+
+export async function askAgent(content: string) {
   try {
     const thread = await openai.beta.threads.create({
       messages: [
@@ -150,9 +179,16 @@ export async function askAgent(
 
     const action = await isRunCompleted(thread.id, run.id);
     const [fnCall] = action?.submit_tool_outputs.tool_calls || [];
+    const fnName = fnCall.function.name;
     const callAtgs = fnCall?.function.arguments;
 
-    return JSON.parse(callAtgs);
+    if (fnName in functions) {
+      const fn = functions[fnName as keyof typeof functions];
+      if (typeof fn === "function") {
+        return fn(callAtgs);
+      }
+    }
+    return "Sorry, I did not understand that.";
   } catch (error) {
     console.error(error, "Failed to ask agent");
   }

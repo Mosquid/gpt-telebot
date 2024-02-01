@@ -1,0 +1,18 @@
+{
+  "name": "schedule_reminder",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "text": {
+        "type": "string",
+        "description": "A text of the reminder (what to remind about)"
+      },
+      "datetime": {
+        "type": "string",
+        "description": "A date and time when to remind (ISO 8601 format)"
+      }
+    },
+    "required": ["text", "datetime"]
+  },
+  "description": "Schedules a reminder for a given date and time"
+}
