@@ -1,118 +1,12 @@
 import OpenAI from "openai";
-import { Message } from "../types";
-import callFunctionByName from "./functions";
 import { notionCreatePage } from "./notion";
 import TelegramBot from "node-telegram-bot-api";
 import { scheduleReminder } from "./scheduler";
 
 const API_KEY = process.env.OPENAI_API_KEY;
-const CHUNK_SIZE = 20;
-
 const openai = new OpenAI({
   apiKey: API_KEY,
 });
-
-export async function* sendMessage(history: Array<Message>) {
-  const messages: Array<any> = [
-    {
-      role: "system",
-      content: `Strictly avoid phrases that start with "As and AI model". If you can't tell, say that you can't. If you don't know say you don't know. If you don't understand, say you don't understand.`,
-    },
-    ...history,
-  ];
-
-  const message = [];
-  let yieldedTimes = 0;
-
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages,
-      stream: true,
-      functions: [
-        {
-          name: "turn_on_blue_light",
-          parameters: {
-            type: "object",
-            properties: {
-              time: {
-                type: "string",
-                description: "Get the current time.",
-              },
-            },
-            required: [],
-          },
-        },
-        {
-          name: "turn_off_blue_light",
-          parameters: {
-            type: "object",
-            properties: {
-              time: {
-                type: "string",
-                description: "Get the current time.",
-              },
-            },
-            required: [],
-          },
-        },
-        {
-          name: "turn_off_green_light",
-          parameters: {
-            type: "object",
-            properties: {
-              time: {
-                type: "string",
-                description: "Get the current time.",
-              },
-            },
-            required: [],
-          },
-        },
-        {
-          name: "turn_on_green_light",
-          parameters: {
-            type: "object",
-            properties: {
-              time: {
-                type: "string",
-                description: "Get the current time.",
-              },
-            },
-            required: [],
-          },
-        },
-      ],
-    });
-
-    for await (const part of response) {
-      const [chioce] = part.choices;
-      const { content, function_call } = chioce.delta || {};
-
-      if (function_call) {
-        callFunctionByName(function_call);
-        return "Sure! My pleasure.";
-      }
-
-      message.push(content);
-      const yieldableChunks = Math.ceil(message.length / CHUNK_SIZE);
-
-      if (content && (!yieldedTimes || yieldableChunks > yieldedTimes)) {
-        yieldedTimes = yieldableChunks;
-
-        yield message.join("");
-        continue;
-      }
-
-      if (chioce.finish_reason === "stop") {
-        return message.join("");
-      }
-    }
-  } catch (error) {
-    console.error(error);
-    throw new Error("Failed to send message");
-  }
-}
 
 async function isRunCompleted(threadId: string, runId: string) {
   try {
@@ -122,6 +16,8 @@ async function isRunCompleted(threadId: string, runId: string) {
     if (endStatuses.includes(run.status)) {
       return run.required_action;
     }
+
+    console.log(run.status, "Thread status");
 
     await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -191,7 +87,7 @@ export async function askAgent(content: string, chat: TelegramBot.Chat) {
       const messages = await openai.beta.threads.messages.list(thread.id);
       const [msg] = messages.data;
 
-      return msg.content;
+      return msg.content[0].type === "text" ? msg.content[0].text.value : "";
     }
 
     const fnName = fnCall.function.name;
