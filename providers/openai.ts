@@ -186,6 +186,14 @@ export async function askAgent(content: string, chat: TelegramBot.Chat) {
 
     const action = await isRunCompleted(thread.id, run.id);
     const [fnCall] = action?.submit_tool_outputs.tool_calls || [];
+
+    if (!fnCall) {
+      const messages = await openai.beta.threads.messages.list(thread.id);
+      const [msg] = messages.data;
+
+      return msg.content;
+    }
+
     const fnName = fnCall.function.name;
     const callAtgs = fnCall?.function.arguments;
 
